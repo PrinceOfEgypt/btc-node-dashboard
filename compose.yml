@@ -1,16 +1,22 @@
 services:
-  btc-gui:
-    ports:
-      - 8080:8080
-    image: ghcr.io/comassky/btc-node-dashboard:main
-    container_name: BTC-Gui
+  btc-node-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: btc-node-dashboard
+    network_mode: host
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     environment:
-      BITCOIN_RPC_HOST: <URL OR HOSTNAME>
-      BITCOIN_RPC_PORT: <PORT>
-      BITCOIN_RPC_USER: <RPC_USER>
-      BITCOIN_RPC_PASSWORD: <RPC_PASSWORD>
-      WS_POLLING_INTERVAL: 1 # WebSocket polling interval in seconds (default: 5)
-      MIN_OUTBOUND_PEERS: 8 # Minimum number of outbound peers before warning (default: 8)
-      LOG_LEVEL: WARN # Logging level: TRACE, DEBUG, INFO, WARN, ERROR (default: INFO)
-      DASHBOARD_DISABLE_MEMPOOL: false # Set to true to disable mempool info retrieval
-      QUARKUS_IO_THREADS: 8 # Number of IO threads for backend concurrency (default: 8, recommended: 2 x CPU cores)
+      QUARKUS_HTTP_HOST: "${QUARKUS_HTTP_HOST:-0.0.0.0}"
+      QUARKUS_HTTP_PORT: "${QUARKUS_HTTP_PORT:-8081}"
+      BITCOIN_RPC_HOST: "${BITCOIN_RPC_HOST:-127.0.0.1}"
+      BITCOIN_RPC_PORT: "${BITCOIN_RPC_PORT:-8332}"
+      BITCOIN_RPC_USER: "${BITCOIN_RPC_USER:?set BITCOIN_RPC_USER in .env}"
+      BITCOIN_RPC_PASSWORD: "${BITCOIN_RPC_PASSWORD:?set BITCOIN_RPC_PASSWORD in .env}"
+      BITCOIN_RPC_SCHEME: "${BITCOIN_RPC_SCHEME:-http}"
+      WS_POLLING_INTERVAL: "${WS_POLLING_INTERVAL:-5}"
+      MIN_OUTBOUND_PEERS: "${MIN_OUTBOUND_PEERS:-8}"
+      DASHBOARD_CACHE_VALIDITY_BUFFER_MS: "${DASHBOARD_CACHE_VALIDITY_BUFFER_MS:-200}"
+      LOG_LEVEL: "${LOG_LEVEL:-INFO}"
+    restart: always

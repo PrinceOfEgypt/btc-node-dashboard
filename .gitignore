@@ -95,6 +95,7 @@ pnpm-debug.log*
 
 # Environment files
 .env
+!.env.example
 .env.local
 .env.*.local
 

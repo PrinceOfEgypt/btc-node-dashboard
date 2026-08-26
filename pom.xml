@@ -130,19 +130,6 @@
                         </configuration>
                     </execution>
 
-
-                    <execution>
-                        <id>sync version</id>
-                        <goals>
-                            <goal>pnpm</goal>
-                        </goals>
-                        <phase>prepare-package</phase>
-                        <configuration>
-                            <workingDirectory>${project.basedir}/src/main/web</workingDirectory>
-                            <arguments>version ${project.version} --allow-same-version --no-git-tag-version</arguments>
-                        </configuration>
-                    </execution>
-
                     <execution>
                         <id>pnpm build</id>
                         <goals>
