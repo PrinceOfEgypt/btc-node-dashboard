@@ -1,5 +1,5 @@
 import { ref, watch } from 'vue';
-import { useWebSocket as useVueUseWebSocket } from '@vueuse/core';
+import { useIntervalFn, useWebSocket as useVueUseWebSocket } from '@vueuse/core';
 import type { DashboardData } from '@types';
 
 /**
@@ -18,6 +18,7 @@ export function useWebSocket(
   const rpcConnected = ref(false);
   const errorMessage = ref<string | null>(null);
   const isRetrying = ref(false);
+  let manuallyDisconnected = false;
 
   const { status, data, open, close } = useVueUseWebSocket(wsUrl, {
     autoReconnect: {
@@ -27,7 +28,7 @@ export function useWebSocket(
     immediate: false,
     heartbeat: {
       message: 'ping',
-      interval: 30000,
+      scheduler: (callback) => useIntervalFn(callback, 30000, { immediate: false }),
       pongTimeout: 10000,
     },
   });
@@ -65,8 +66,8 @@ export function useWebSocket(
       isRetrying.value = false;
     } else if (newStatus === 'CLOSED') {
       rpcConnected.value = false;
-      errorMessage.value = 'WebSocket disconnected. Retrying...';
-      isRetrying.value = true;
+      errorMessage.value = manuallyDisconnected ? null : 'WebSocket disconnected. Retrying...';
+      isRetrying.value = !manuallyDisconnected;
     } else if (newStatus === 'CONNECTING') {
       isRetrying.value = true;
     }
@@ -76,8 +77,16 @@ export function useWebSocket(
    * Closes the WebSocket connection if open.
    */
   const disconnect = () => {
+    manuallyDisconnected = true;
     close();
+    rpcConnected.value = false;
+    errorMessage.value = null;
     isRetrying.value = false;
+  };
+
+  const connect = () => {
+    manuallyDisconnected = false;
+    open();
   };
 
   return {
@@ -90,7 +99,7 @@ export function useWebSocket(
     /** Whether the connection is retrying */
     isRetrying,
     /** Function to connect WebSocket */
-    connect: open,
+    connect,
     /** Function to disconnect WebSocket */
     disconnect,
   };

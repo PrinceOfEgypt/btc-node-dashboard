@@ -45,9 +45,7 @@ const backendVersions = {
   javaRelease: extractProperty('maven.compiler.release') || '25',
   quarkusVersion: extractProperty('quarkus.platform.version') || '3.30.5',
   mavenVersion: extractProperty('maven.version') || '3.9.11',
-  nodeVersion: extractProperty('node.version') || 'v24.12.0',
-  pnpmVersion: extractProperty('pnpm.version') || '10.27.0',
-  npmVersion: extractProperty('npm.version') || '11.6.2',
+  nodeVersion: `v${extractProperty('quarkus.quinoa.package-manager-install.node-version')}`,
   // Maven plugins
   mavenCompilerPlugin: extractProperty('maven-compiler-plugin.version') || '3.14.1',
   mavenSurefirePlugin: extractProperty('maven-surefire-plugin.version') || '3.5.4',
@@ -161,16 +159,6 @@ const updateReadme = () => {
     `**Node.js** ${backendVersions.nodeVersion} `
   );
   
-  readme = readme.replace(
-    /\*\*pnpm\*\* [\d.]+ /,
-    `**pnpm** ${backendVersions.pnpmVersion} `
-  );
-  
-  readme = readme.replace(
-    /\*\*npm\*\* [\d.]+ /,
-    `**npm** ${backendVersions.npmVersion} `
-  );
-  
   // Update version in docker tags
   readme = readme.replace(
     /- Current version: `[\d.]+-SNAPSHOT`/,
@@ -228,12 +216,6 @@ const updateTesting = () => {
     testing = testing.replace(regex, `${name} (${version})`);
   });
   
-  // Update pnpm version
-  testing = testing.replace(
-    /\*\*pnpm\*\* [\d.]+ /,
-    `**pnpm** ${backendVersions.pnpmVersion} `
-  );
-  
   fs.writeFileSync(testingPath, testing, 'utf-8');
   console.log('✅ Updated TESTING.md');
 };
@@ -260,16 +242,6 @@ const updateContributing = () => {
     `- Node.js ${backendVersions.nodeVersion}`
   );
   
-  contributing = contributing.replace(
-    /- pnpm [\d.]+/,
-    `- pnpm ${backendVersions.pnpmVersion}`
-  );
-  
-  contributing = contributing.replace(
-    /- npm [\d.]+/,
-    `- npm ${backendVersions.npmVersion}`
-  );
-  
   fs.writeFileSync(contributingPath, contributing, 'utf-8');
   console.log('✅ Updated CONTRIBUTING.md');
 };
@@ -290,16 +262,6 @@ const updateBuild = () => {
     `**Optional:** Node.js 24+ (${backendVersions.nodeVersion}`
   );
   
-  build = build.replace(
-    /pnpm [\d.]+/g,
-    `pnpm ${backendVersions.pnpmVersion}`
-  );
-  
-  build = build.replace(
-    /npm [\d.]+/g,
-    `npm ${backendVersions.npmVersion}`
-  );
-  
   fs.writeFileSync(buildPath, build, 'utf-8');
   console.log('✅ Updated BUILD.md');
 };
@@ -307,8 +269,9 @@ const updateBuild = () => {
 // Update GitHub Actions workflows
 const updateWorkflows = () => {
   const workflowFiles = [
-    '.github/workflows/docker-dev-native.yml',
-    '.github/workflows/docker-native.yml',
+    '.github/workflows/docker.yml',
+    '.github/workflows/release.yml',
+    '.github/workflows/publish-image.yml',
   ];
 
   workflowFiles.forEach((filePath) => {
@@ -317,28 +280,13 @@ const updateWorkflows = () => {
 
     let workflow = fs.readFileSync(fullPath, 'utf-8');
 
-    // Update GRAALVM_VERSION
     workflow = workflow.replace(
-      /GRAALVM_VERSION: "\d+"/,
-      `GRAALVM_VERSION: "${backendVersions.javaVersion}"`
+      /java-version: \d+/g,
+      `java-version: ${backendVersions.javaVersion}`
     );
-
-    // Update NODE_VERSION
     workflow = workflow.replace(
-      /NODE_VERSION: "v?[\d.]+"/,
-      `NODE_VERSION: "${backendVersions.nodeVersion}"`
-    );
-
-    // Update PNPM_VERSION
-    workflow = workflow.replace(
-      /PNPM_VERSION: "[\d.]+"/,
-      `PNPM_VERSION: "${backendVersions.pnpmVersion}"`
-    );
-
-    // Update MAVEN_VERSION
-    workflow = workflow.replace(
-      /MAVEN_VERSION: "[\d.]+"/,
-      `MAVEN_VERSION: "${backendVersions.mavenVersion}"`
+      /name: Set up JDK \d+/g,
+      `name: Set up JDK ${backendVersions.javaVersion}`
     );
 
     fs.writeFileSync(fullPath, workflow, 'utf-8');

@@ -1,27 +1,28 @@
 # 🧩 Monorepo & Frontend Development
 
-The project uses a pnpm workspace for frontend dependency management (see `src/main/web/pnpm-workspace.yaml`).
+The project uses npm for frontend dependency management, with Quinoa orchestrating Maven builds.
 
 ## Installing frontend dependencies
 
 ```bash
 cd src/main/web
-pnpm install
-# or, if pnpm is not installed:
-npm install -g pnpm@10.27.0
-pnpm install
+# Use Node.js v24.21.0 and bundled npm; the Node.js version is defined in pom.xml
+npm ci
 ```
+
+For a full application build, run `mvn -B --no-transfer-progress verify` from the repository root with JDK 25. Quinoa installs Node.js and bundled npm locally; global frontend tools are not required for that path. See [BUILD.md](BUILD.md).
 
 ## Useful Scripts
 
-- `pnpm dev` : Vite development server with hot reload
-- `pnpm build` : production build with optimizations
-- `pnpm test` : frontend unit tests (Vitest)
-- `pnpm test:ui` : interactive test UI
-- `pnpm coverage` : test coverage report
-- `pnpm prettier` : format code with Prettier
+- `npm run dev` : Vite development server with hot reload
+- `npm run build` : production build with optimizations
+- `npm test` : frontend unit tests (Vitest)
+- `npm run test -- --run` : frontend unit tests once, as in CI
+- `npm run test:ui` : interactive test UI
+- `npm run coverage` : test coverage report
+- `npm run prettier` : format code with Prettier
 
-CI workflows use pnpm to ensure dependency consistency.
+Maven and CI use `npm ci`. For intentional dependency updates, run `npm install` and commit [package.json](src/main/web/package.json) together with [package-lock.json](src/main/web/package-lock.json).
 
 ## Performance Optimizations
 
@@ -50,14 +51,31 @@ When contributing, please maintain these optimizations and avoid re-introducing 
 
 - Java 25
 - Quarkus 3.32.0.CR1
-- Node.js v24.12.0
-- pnpm 10.28.2
-- npm 11.6.2
+- Node.js v24.21.0
+- npm bundled with the Maven-managed Node.js installation
+
+[pom.xml](pom.xml) is the source of truth for the Java/frontend toolchain. [renovate.json](renovate.json) groups Java, frontend, Docker and GitHub Actions updates separately. Docker digests are pinned, automerge is disabled, and the Compose image published by this repository is excluded from dependency updates.
 
 # 🛠️ CI & Quality
 
-- Every Pull Request must pass all tests to be merged.
-- CI workflows ensure that no untested code is deployed.
+- Build-relevant pull requests run `mvn verify` with native compilation through Mandrel in Docker. This runs backend and frontend unit tests; Failsafe integration tests are disabled by the current Maven configuration.
+- Documentation-only changes skip compilation and image builds. Pull requests never publish images.
+- Maven test failures stop both the JVM Docker build and the native publication workflows. Do not add test-skip flags to CI.
+- The runtime images are Distroless Debian 13, run as UID/GID `65532:65532`, and contain no shell. Use `JAVA_TOOL_OPTIONS` for JVM options.
+
+Before submitting build or workflow changes:
+
+```bash
+mvn -B --no-transfer-progress verify
+docker build --check -f Dockerfile .
+docker build --check -f Dockerfile.native .
+docker run --rm -v "$PWD:/repo:ro" -w /repo rhysd/actionlint:latest -color
+npx --yes --package renovate renovate-config-validator --strict renovate.json
+```
+
+Build checks validate Dockerfile configuration, not a native executable's runtime compatibility. Verify native changes with the containerized build command in [BUILD.md](BUILD.md).
+
+Maintainers use [release.yml](.github/workflows/release.yml) to verify a release before committing versions, creating its tag and publishing it. Use [publish-image.yml](.github/workflows/publish-image.yml) to rebuild an existing tag. See [DOCKER.md](DOCKER.md) for required permissions and [OPENAPI.md](OPENAPI.md) for release documentation deployment.
 
 # Contributing to btc-node-dashboard
 

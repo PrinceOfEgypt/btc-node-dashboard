@@ -3,24 +3,21 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>comasky</groupId>
     <artifactId>btc-node-dashboard</artifactId>
-    <version>1.5.0</version>
+    <version>2.0.1-SNAPSHOT</version>
 
     <properties>
         <!-- Version Properties -->
         <maven.compiler.release>25</maven.compiler.release>
-        <quarkus.platform.version>3.32.0.CR1</quarkus.platform.version>
-        <frontend-maven-plugin.version>2.0.0</frontend-maven-plugin.version>
-        <node.lts.version>v24.13.0</node.lts.version>
-        <pnpm.version>10.28.2</pnpm.version>
-        <compiler-plugin.version>3.15.0</compiler-plugin.version>
-        <surefire-plugin.version>3.5.5</surefire-plugin.version>
-        <maven-resources-plugin.version>3.4.0</maven-resources-plugin.version>
+        <quarkus.platform.version>3.40.1.1</quarkus.platform.version>
+        <quinoa.version>2.9.3</quinoa.version>
+        <quarkus.quinoa.package-manager-install.node-version>24.22.1</quarkus.quinoa.package-manager-install.node-version>
+        <compiler-plugin.version>3.16.0</compiler-plugin.version>
+        <surefire-plugin.version>3.6.0</surefire-plugin.version>
 
         <!-- Other Properties -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <skipITs>true</skipITs>
-        <skipFrontendTests>false</skipFrontendTests>
     </properties>
 
     <dependencyManagement>
@@ -37,8 +34,17 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.quarkiverse.quinoa</groupId>
+            <artifactId>quarkus-quinoa</artifactId>
+            <version>${quinoa.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -96,77 +102,6 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>com.github.eirslett</groupId>
-                <artifactId>frontend-maven-plugin</artifactId>
-                <version>${frontend-maven-plugin.version}</version>
-                <configuration>
-                    <nodeVersion>${node.lts.version}</nodeVersion>
-                    <pnpmVersion>${pnpm.version}</pnpmVersion>
-                    <workingDirectory>${project.basedir}/src/main/web</workingDirectory>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>install node and pnpm</id>
-                        <goals>
-                            <goal>install-node-and-pnpm</goal>
-                        </goals>
-                        <phase>prepare-package</phase>
-                        <configuration>
-                            <nodeVersion>${node.lts.version}</nodeVersion>
-                            <pnpmVersion>${pnpm.version}</pnpmVersion>
-                            <workingDirectory>${project.basedir}/src/main/web</workingDirectory>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>pnpm install</id>
-                        <goals>
-                            <goal>pnpm</goal>
-                        </goals>
-                        <phase>prepare-package</phase>
-                        <configuration>
-                            <workingDirectory>${project.basedir}/src/main/web</workingDirectory>
-                            <arguments>install --frozen-lockfile</arguments>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>pnpm build</id>
-                        <goals>
-                            <goal>pnpm</goal>
-                        </goals>
-                        <phase>prepare-package</phase>
-                        <configuration>
-                            <workingDirectory>${project.basedir}/src/main/web</workingDirectory>
-                            <arguments>run build</arguments>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>${maven-resources-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>copy-frontend</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/classes/META-INF/resources</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${project.basedir}/src/main/web/dist</directory>
-                                    <filtering>false</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
                 <groupId>io.quarkus.platform</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <version>${quarkus.platform.version}</version>
@@ -201,6 +136,7 @@
                 <version>${surefire-plugin.version}</version>
                 <configuration>
                     <systemPropertyVariables>
+                        <quarkus.quinoa.package-manager-install.node-version>${quarkus.quinoa.package-manager-install.node-version}</quarkus.quinoa.package-manager-install.node-version>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>${maven.home}</maven.home>
                     </systemPropertyVariables>
@@ -224,6 +160,7 @@
                 <configuration>
                     <systemPropertyVariables>
                         <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
+                        <quarkus.quinoa.package-manager-install.node-version>${quarkus.quinoa.package-manager-install.node-version}</quarkus.quinoa.package-manager-install.node-version>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>${maven.home}</maven.home>
                     </systemPropertyVariables>
@@ -234,6 +171,18 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>skip-frontend-tests</id>
+            <activation>
+                <property>
+                    <name>skipFrontendTests</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <properties>
+                <quarkus.quinoa.run-tests>false</quarkus.quinoa.run-tests>
+            </properties>
+        </profile>
         <profile>
             <id>native</id>
             <activation>

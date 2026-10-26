@@ -1,16 +1,18 @@
-FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0
+FROM gcr.io/distroless/base-debian13:nonroot@sha256:f9518b74815721f537a7458cc693b4406208c04fce23bbffab511516117f34fd
 
 # Set working directory
-WORKDIR /work/
+WORKDIR /app
 
 # Copy the native executable and set permissions
-COPY --chown=1001:root --chmod=0555 target/*-runner /work/application
+COPY --chown=65532:65532 --chmod=0555 target/*-runner /app/application
+
+ENV QUARKUS_HTTP_HOST=0.0.0.0
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 
 # Expose the default Quarkus port
 EXPOSE 8080
 
 # Run as non-root user
-USER 1001
+USER 65532:65532
 
-# Run the native executable with Quarkus host binding
-ENTRYPOINT ["/work/application", "-Dquarkus.http.host=0.0.0.0"]
+ENTRYPOINT ["/app/application"]
