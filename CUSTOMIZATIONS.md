@@ -55,6 +55,14 @@ to Vite via `APP_VERSION`.
   - Polling / dashboard tuning values
   - Log level
 
+### GitHub Actions (repo setting, not a file change)
+
+- The `Docker - Build and Publish Dev` workflow (`.github/workflows/docker.yml`) is disabled on this fork
+  - It runs on every push to `main` and tries to publish to `ghcr.io/princeofegypt/btc-node-dashboard`, which fails and isn't needed since images are built locally
+  - The workflow file is left identical to upstream to avoid merge conflicts
+  - Re-enable with `gh workflow enable docker.yml --repo PrinceOfEgypt/btc-node-dashboard`
+- The manual-only release workflows (`release.yml`, `publish-image.yml`) are untouched
+
 ## Why These Exist
 
 - Host networking simplified access to the local Bitcoin node
