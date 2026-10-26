@@ -25,11 +25,20 @@ This fork intentionally differs from upstream `comassky/btc-node-dashboard` in a
   - `eclipse-temurin:25-jre`
 - Removes Maven wrapper / `.mvn` copy steps
 - Builds directly with Maven in the container
+- Builds with `mvn package -DskipTests -DskipFrontendTests=true` (upstream runs `mvn verify`) to keep Pi builds fast
 - Keeps the Quarkus fast-jar runtime layout
+- Uses `eclipse-temurin:25-jre` instead of upstream's distroless runtime, so `curl` is available for the healthcheck
+- `HEALTHCHECK` hits `/q/health` on `${QUARKUS_HTTP_PORT}` (8081 here), not a hardcoded 8080
+- Keeps the local G1GC tuning flags, passed via `JAVA_TOOL_OPTIONS` (upstream style) with a plain `java -jar` entrypoint
 
 ### `pom.xml`
 
-- Removes the `sync version` `pnpm` execution from the `prepare-package` phase
+- Adds `quarkus-smallrye-health` so `/q/health` exists for the Docker healthcheck
+
+Upstream 2.0 replaced `frontend-maven-plugin`/pnpm with Quarkus Quinoa/npm, so the old
+local removal of the pnpm `sync version` step is no longer needed. The frontend is now
+built by Quinoa (which downloads its own Node into `.quinoa/`) and the app version is passed
+to Vite via `APP_VERSION`.
 
 ### `.gitignore`
 
@@ -59,6 +68,6 @@ When pulling upstream changes, pay closest attention to merge conflicts in:
 
 - `compose.yml`
 - `Dockerfile`
-- `pom.xml`
+- `pom.xml` (only the added health dependency; otherwise track upstream)
 
 These are the files with intentional local divergence.
